@@ -391,7 +391,7 @@ func run(ctx context.Context, containerRuntime container_runtime.ContainerRuntim
 				return err
 			}
 		} else {
-			if err := c.Build(ctx, build.BuildOptions{}); err != nil {
+			if err := c.Build(ctx, build.BuildOptions{VerifyBuiltImages: true}); err != nil {
 				return err
 			}
 		}

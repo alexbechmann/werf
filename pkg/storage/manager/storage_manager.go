@@ -64,7 +64,8 @@ type StorageManagerInterface interface {
 	SelectSuitableStage(ctx context.Context, c stage.Conveyor, stg stage.Interface, stages []*image.StageDescription) (*image.StageDescription, error)
 	CopySuitableByDigestStage(ctx context.Context, stageDesc *image.StageDescription, sourceStagesStorage, destinationStagesStorage storage.StagesStorage, containerRuntime container_runtime.ContainerRuntime) (*image.StageDescription, error)
 	CopyStageIntoCache(ctx context.Context, stg stage.Interface, containerRuntime container_runtime.ContainerRuntime) error
-	CopyStageIntoFinalRepo(ctx context.Context, stg stage.Interface, containerRuntime container_runtime.ContainerRuntime) error
+	CopyStageIntoFinalRepo(ctx context.Context, stg stage.Interface, containerRuntime container_runtime.ContainerRuntime, opts CopyStageIntoFinalRepoOptions) error
+	VerifyStage(ctx context.Context, stg stage.Interface, stagesStorage storage.StagesStorage) error
 
 	ForEachDeleteStage(ctx context.Context, options ForEachDeleteStageOptions, stagesDescriptions []*image.StageDescription, f func(ctx context.Context, stageDesc *image.StageDescription, err error) error) error
 	ForEachDeleteFinalStage(ctx context.Context, options ForEachDeleteStageOptions, stagesDescriptions []*image.StageDescription, f func(ctx context.Context, stageDesc *image.StageDescription, err error) error) error
@@ -622,7 +623,23 @@ func (m *StorageManager) getOrCreateFinalStagesListCache(ctx context.Context) (*
 	return m.FinalStagesListCache, nil
 }
 
-func (m *StorageManager) CopyStageIntoFinalRepo(ctx context.Context, stg stage.Interface, containerRuntime container_runtime.ContainerRuntime) error {
+func (m *StorageManager) VerifyStage(ctx context.Context, stg stage.Interface, stagesStorage storage.StagesStorage) error {
+	_, err := getStageDescription(ctx, m.ProjectName, *stg.GetImage().GetStageDescription().StageID, stagesStorage, nil, getStageDescriptionOptions{
+		AllowStagesStorageCacheReset: true,
+		WithLocalManifestCache:       false,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to get image manifest: %w", err)
+	}
+
+	return nil
+}
+
+type CopyStageIntoFinalRepoOptions struct {
+	ShouldBeBuiltMode bool
+}
+
+func (m *StorageManager) CopyStageIntoFinalRepo(ctx context.Context, stg stage.Interface, containerRuntime container_runtime.ContainerRuntime, opts CopyStageIntoFinalRepoOptions) error {
 	existingStagesListCache, err := m.getOrCreateFinalStagesListCache(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting existing stages list of final repo %s: %s", m.FinalStagesStorage.String(), err)
@@ -642,6 +659,10 @@ func (m *StorageManager) CopyStageIntoFinalRepo(ctx context.Context, stg stage.I
 
 			return nil
 		}
+	}
+
+	if opts.ShouldBeBuiltMode {
+		return fmt.Errorf("%s with digest %s is not exist in the final repo", stg.LogDetailedName(), stg.GetDigest())
 	}
 
 	if err := m.FetchStage(ctx, containerRuntime, stg); err != nil {

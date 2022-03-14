@@ -106,6 +106,7 @@ If one or more IMAGE_NAME parameters specified, werf will build only these image
 
 	common.SetupAddCustomTag(&commonCmdData, cmd)
 	common.SetupVirtualMerge(&commonCmdData, cmd)
+	common.SetupVerifyBuiltImages(&commonCmdData, cmd)
 
 	common.SetupParallelOptions(&commonCmdData, cmd, common.DefaultBuildParallelTasksLimit)
 	common.SetupFollow(&commonCmdData, cmd)
@@ -251,6 +252,7 @@ func run(ctx context.Context, containerRuntime container_runtime.ContainerRuntim
 	if err != nil {
 		return err
 	}
+	buildOptions.VerifyBuiltImages = *commonCmdData.VerifyBuiltImages
 
 	conveyorOptions, err := common.GetConveyorOptionsWithParallel(&commonCmdData, buildOptions)
 	if err != nil {

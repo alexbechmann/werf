@@ -10,7 +10,7 @@ import (
 	"github.com/Masterminds/semver"
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/cobra"
-	"helm.sh/helm/v3/cmd/helm"
+	helm_v3 "helm.sh/helm/v3/cmd/helm"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli/values"
@@ -236,6 +236,7 @@ func runPublish(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	buildOptions.VerifyBuiltImages = true
 
 	logboek.LogOptionalLn()
 

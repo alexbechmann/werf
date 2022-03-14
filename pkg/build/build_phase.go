@@ -25,6 +25,7 @@ import (
 	imagePkg "github.com/werf/werf/pkg/image"
 	"github.com/werf/werf/pkg/stapel"
 	"github.com/werf/werf/pkg/storage"
+	"github.com/werf/werf/pkg/storage/manager"
 	"github.com/werf/werf/pkg/util"
 	"github.com/werf/werf/pkg/werf"
 )
@@ -40,6 +41,8 @@ type BuildOptions struct {
 
 	ReportPath   string
 	ReportFormat ReportFormat
+
+	VerifyBuiltImages bool
 
 	CustomTagFuncList []func(string) string
 }
@@ -237,6 +240,13 @@ func (phase *BuildPhase) AfterImageStages(ctx context.Context, img *Image) error
 		return nil
 	}
 
+	// Verify primary repo image when no final repo used, verify only final repo image otherwise
+	if phase.Conveyor.StorageManager.GetFinalStagesStorage() == nil && phase.BuildPhaseOptions.VerifyBuiltImages {
+		if err := phase.Conveyor.StorageManager.VerifyStage(ctx, img.GetLastNonEmptyStage(), phase.Conveyor.StorageManager.GetStagesStorage()); err != nil {
+			return fmt.Errorf("image %s verification failed: %w", img.GetLastNonEmptyStage().GetImage().Name(), err)
+		}
+	}
+
 	if !phase.ShouldBeBuiltMode {
 		if err := phase.addCustomImageTagsToStagesStorage(ctx, img); err != nil {
 			return fmt.Errorf("unable to add custom image tags to stages storage: %s", err)
@@ -248,8 +258,14 @@ func (phase *BuildPhase) AfterImageStages(ctx context.Context, img *Image) error
 	}
 
 	if phase.Conveyor.StorageManager.GetFinalStagesStorage() != nil {
-		if err := phase.Conveyor.StorageManager.CopyStageIntoFinalRepo(ctx, img.GetLastNonEmptyStage(), phase.Conveyor.ContainerRuntime); err != nil {
+		if err := phase.Conveyor.StorageManager.CopyStageIntoFinalRepo(ctx, img.GetLastNonEmptyStage(), phase.Conveyor.ContainerRuntime, manager.CopyStageIntoFinalRepoOptions{ShouldBeBuiltMode: phase.ShouldBeBuiltMode}); err != nil {
 			return err
+		}
+
+		if phase.VerifyBuiltImages {
+			if err := phase.Conveyor.StorageManager.VerifyStage(ctx, img.GetLastNonEmptyStage(), phase.Conveyor.StorageManager.GetFinalStagesStorage()); err != nil {
+				return fmt.Errorf("final image %s verification failed: %w", img.GetLastNonEmptyStage().GetImage().Name(), err)
+			}
 		}
 	}
 

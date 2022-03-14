@@ -267,6 +267,7 @@ func run(ctx context.Context, containerRuntime container_runtime.ContainerRuntim
 	if err != nil {
 		return err
 	}
+	buildOptions.VerifyBuiltImages = true
 
 	var imagesInfoGetters []*image.InfoGetter
 	var imagesRepository string

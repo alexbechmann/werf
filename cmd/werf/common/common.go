@@ -97,6 +97,7 @@ type CmdData struct {
 
 	IntrospectBeforeError *bool
 	IntrospectAfterError  *bool
+	VerifyBuiltImages     *bool
 	StagesToIntrospect    *[]string
 
 	Follow *bool
@@ -142,6 +143,11 @@ func GetLongCommandDescription(text string) string {
 func SetupSetDockerConfigJsonValue(cmdData *CmdData, cmd *cobra.Command) {
 	cmdData.SetDockerConfigJsonValue = new(bool)
 	cmd.Flags().BoolVarP(cmdData.SetDockerConfigJsonValue, "set-docker-config-json-value", "", GetBoolEnvironmentDefaultFalse("WERF_SET_DOCKER_CONFIG_JSON_VALUE"), "Shortcut to set current docker config into the .Values.dockerconfigjson")
+}
+
+func SetupVerifyBuiltImages(cmdData *CmdData, cmd *cobra.Command) {
+	cmdData.VerifyBuiltImages = new(bool)
+	cmd.Flags().BoolVarP(cmdData.VerifyBuiltImages, "verify-built-images", "", GetBoolEnvironmentDefaultFalse("WERF_VERIFY_BUILT_IMAGES"), "Verify that images manifests are available in the container registry after building, note that this option will slow down process if all stages are already built (default false or $WERF_VERIFY_BUILT_IMAGES)")
 }
 
 func SetupGitWorkTree(cmdData *CmdData, cmd *cobra.Command) {

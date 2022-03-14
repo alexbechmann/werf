@@ -222,6 +222,7 @@ func runRender(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	buildOptions.VerifyBuiltImages = true
 
 	logboek.LogOptionalLn()
 

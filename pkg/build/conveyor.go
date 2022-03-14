@@ -315,6 +315,7 @@ func (c *Conveyor) ShouldBeBuilt(ctx context.Context, opts ShouldBeBuiltOptions)
 		NewBuildPhase(c, BuildPhaseOptions{
 			ShouldBeBuiltMode: true,
 			BuildOptions: BuildOptions{
+				VerifyBuiltImages: true,
 				CustomTagFuncList: opts.CustomTagFuncList,
 			},
 		}),
